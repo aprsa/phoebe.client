@@ -1,0 +1,20 @@
+# Source distribution manifest
+
+include LICENSE
+include README.md
+include pyproject.toml
+
+# Type information for PEP 561
+include phoebe_client/py.typed
+
+# Package sources (sdist already includes package modules by default, kept explicit)
+recursive-include phoebe_client *.py
+
+# Examples (optional, helpful for users)
+recursive-include examples *.py
+
+# Exclude caches, compiled artifacts, OS cruft
+recursive-exclude * __pycache__ *.py[cod] *.so *.dylib .DS_Store
+
+# Never ship local config that might carry secrets
+exclude config.toml

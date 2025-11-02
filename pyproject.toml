@@ -1,0 +1,93 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "phoebe-client"
+version = "0.1.0"
+description = "Python client for PHOEBE backend services"
+readme = "README.md"
+requires-python = ">=3.12"
+license = {text = "AGPL-3.0-or-later"}
+authors = [
+    {name = "Andrej Prša", email = "andrej.prsa@villanova.edu"}
+]
+maintainers = [
+    {name = "Andrej Prša", email = "andrej.prsa@villanova.edu"}
+]
+keywords = ["phoebe", "astronomy", "binary stars", "astrophysics"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Astronomy",
+    "Topic :: Scientific/Engineering :: Physics",
+]
+
+dependencies = [
+    "requests>=2.28.0",
+    "pydantic>=2.0.0",
+    "numpy>=1.26.0",
+]
+
+[project.optional-dependencies]
+jwt = [
+    "pyjwt>=2.8.0",
+]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "black>=23.0.0",
+    "mypy>=1.0.0",
+    "flake8>=6.0.0",
+    "isort>=5.12.0",
+]
+all = [
+    "phoebe-client[jwt,dev]",
+]
+
+[project.urls]
+Homepage = "https://phoebe-project.org"
+Documentation = "https://phoebe-project.org/docs"
+Repository = "https://github.com/aprsa/phoebe-client"
+Issues = "https://github.com/aprsa/phoebe-client/issues"
+
+[tool.setuptools]
+packages = ["phoebe_client", "phoebe_client.auth", "phoebe_client.utils"]
+
+[tool.setuptools.package-data]
+phoebe_client = ["py.typed"]
+
+[tool.black]
+line-length = 100
+target-version = ['py312']
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 100
+
+[tool.mypy]
+python_version = "3.12"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = "-ra -q"
+testpaths = ["tests"]
+
+[tool.coverage.run]
+source = ["phoebe_client"]
+omit = ["tests/*", "examples/*"]
