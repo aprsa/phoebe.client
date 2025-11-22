@@ -3,7 +3,6 @@
 from typing import Any
 from .server_api import SessionAPI, PhoebeAPI
 from .auth.base import AuthProvider
-from .exceptions import AuthenticationError
 
 
 class PhoebeClient:

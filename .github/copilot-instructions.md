@@ -23,7 +23,7 @@ For PHOEBE documentation and command reference:
 - **`PhoebeAPI`** (`server_api.py`): PHOEBE-specific operations via unified `execute()` method
 - **`BaseAPI`** (`server_api.py`): Shared server connection plumbing (host/port/timeout, base_url, X-API-Key headers)
 
-All PHOEBE commands flow through `PhoebeAPI.execute(command, args)` which POSTs to `/send/{client_id}` with JSON payload containing `command` key plus command-specific arguments. Server auth uses `X-API-Key` header from `config.toml`.
+All PHOEBE commands flow through `PhoebeAPI.execute(command, args)` which POSTs to `/send/{session_id}` with JSON payload containing `command` key plus command-specific arguments. Server auth uses `X-API-Key` header from `config.toml`.
 
 ### Authentication Split
 - Client → Server auth: `X-API-Key` header only (configured in `config.toml`). JWT is never sent to the server.
@@ -39,11 +39,11 @@ with PhoebeClient(base_url=url) as client:
     # session auto-created and auto-closed
 ```
 
-### Client ID Propagation
-Sessions return a `client_id` that must be set on `PhoebeAPI` before executing commands:
+### Session ID Propagation
+Sessions return a `session_id` that must be set on `PhoebeAPI` before executing commands:
 ```python
 response = self.sessions.start_session()
-self.phoebe.set_client_id(response.get('client_id'))
+self.phoebe.set_session_id(response.get('session_id'))
 ```
 
 ### Serialization Strategy (WIP)
@@ -111,7 +111,7 @@ mypy phoebe_client/
 ## API Communication Contract
 
 ### Request Structure
-All PHOEBE commands POST to `/send/{client_id}` with JSON body:
+All PHOEBE commands POST to `/send/{session_id}` with JSON body:
 ```json
 {
   "command": "b.set_value",
@@ -124,17 +124,17 @@ All PHOEBE commands POST to `/send/{client_id}` with JSON body:
 Server auth: `X-API-Key: <api_key>` (from `config.toml`)
 
 ### Session Endpoints
-- `POST /dash/start-session` → returns `{client_id: ...}`
-- `POST /dash/end-session/{client_id}`
+- `POST /dash/start-session` → returns `{session_id: ...}`
+- `POST /dash/end-session/{session_id}`
 - `GET /dash/sessions` → list active sessions
 
 ## Common Gotchas
 
-1. **Client ID Required**: `PhoebeAPI.execute()` raises `ValueError` if `client_id` not set. Always call `create_session()` or set manually. The flow: `sessions.start_session()` returns `{client_id: ...}` → pass to `phoebe.set_client_id()`.
+1. **Session ID Required**: `PhoebeAPI.execute()` raises `ValueError` if `session_id` not set. Always call `start_session()` or set manually. The flow: `sessions.start_session()` returns `{session_id: ...}` → pass to `phoebe.set_session_id()`.
 
 2. **Optional Dependencies**: JWT features require `pyjwt` package. JWT is for UI→Client only; never send it to the server.
 
-3. **Context Manager vs Manual**: `with PhoebeClient()` auto-creates session; plain instantiation requires explicit `create_session()`/`close_session()` calls. See `examples/basic_usage.py` vs `examples/explicit_session.py`.
+3. **Context Manager vs Manual**: `with PhoebeClient()` auto-creates session; plain instantiation requires explicit `start_session()`/`close_session()` calls. See `examples/basic_usage.py` vs `examples/explicit_session.py`.
 
 4. **NumPy Serialization**: Always pass PHOEBE parameters through `make_json_serializable()` before JSON encoding to handle arrays. This happens automatically in `PhoebeAPI.execute()`.
 
