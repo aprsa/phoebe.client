@@ -11,7 +11,7 @@ with PhoebeClient(host="localhost", port=8001) as client:
     period = client.get_value(qualifier='period', component='binary', kind='orbit', context='component')
     print(f"Period: {period}")
 
-    client.add_dataset(kind='lc', dataset='lc01', passband='Johnson:V')
+    client.add_dataset(kind='lc', dataset='lc01', passband='Johnson:V', compute_times=[0., 0.5, 1.0])
 
     result = client.run_compute()
     print(f"Success: {result.get('success')}")
