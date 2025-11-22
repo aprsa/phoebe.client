@@ -84,16 +84,20 @@ class SessionAPI(BaseAPI):
     def get_sessions(self) -> dict[str, Any]:
         return self._request("GET", "/dash/sessions")
 
-    def start_session(self) -> dict[str, Any]:
-        return self._request("POST", "/dash/start-session")
+    def start_session(self, metadata: dict[str, Any] | None = None) -> dict[str, Any]:
+        return self._request(
+            'POST',
+            '/dash/start-session',
+            json={'metadata': metadata}
+        )
 
-    def end_session(self, client_id: str) -> dict[str, Any]:
-        return self._request("POST", f"/dash/end-session/{client_id}")
+    def end_session(self, session_id: str) -> dict[str, Any]:
+        return self._request("POST", f"/dash/end-session/{session_id}")
 
-    def update_user_info(self, client_id: str, first_name: str, last_name: str):
+    def update_user_info(self, session_id: str, first_name: str, last_name: str):
         return self._request(
             "POST",
-            f"/dash/update-user-info/{client_id}",
+            f"/dash/update-user-info/{session_id}",
             json={"first_name": first_name, "last_name": last_name},
         )
 
@@ -108,7 +112,7 @@ class PhoebeAPI(BaseAPI):
     """API client for PHOEBE parameter operations.
 
     Executes PHOEBE commands via unified execute() method, which POSTs to
-    /send/{client_id} with JSON payload. All commands flow through this
+    /send/{session_id} with JSON payload. All commands flow through this
     single endpoint with server-side PHOEBE Bundle method dispatch.
     """
 
@@ -117,23 +121,23 @@ class PhoebeAPI(BaseAPI):
         host: str | None = None,
         port: int | None = None,
         timeout: int | None = None,
-        client_id: str | None = None,
+        session_id: str | None = None,
     ):
         super().__init__(host=host, port=port, timeout=timeout)
-        self.client_id = client_id
+        self.session_id = session_id
 
-    def set_client_id(self, client_id: str | None):
-        self.client_id = client_id
+    def set_session_id(self, session_id: str | None):
+        self.session_id = session_id
 
     def execute(self, command: str, args: dict[str, Any] | None = None) -> dict[str, Any]:
-        if not self.client_id:
-            raise ValueError("No client ID set. Call set_client_id() first.")
+        if not self.session_id:
+            raise ValueError('No session ID set. Call set_session_id() first.')
 
-        payload: dict[str, Any] = {**(args or {}), "command": command}
+        payload: dict[str, Any] = {**(args or {}), 'command': command}
 
         try:
             response = requests.post(
-                f"{self.base_url}/send/{self.client_id}",
+                f'{self.base_url}/send/{self.session_id}',
                 json=make_json_serializable(payload),
                 headers=self._get_headers(),
                 timeout=self._timeout,
@@ -144,8 +148,8 @@ class PhoebeAPI(BaseAPI):
             status = e.response.status_code if e.response is not None else None
             if status in (401, 403):
                 raise CommandError(
-                    f"Server authentication failed (status {status}). Check API key in config.toml."
+                    f'Server authentication failed (status {status}). Check API key in config.toml.'
                 ) from e
-            raise CommandError(f"Command failed: {e}") from e
+            raise CommandError(f'Command failed: {e}') from e
         except requests.RequestException as e:
-            raise CommandError(f"Command failed: {e}") from e
+            raise CommandError(f'Command failed: {e}') from e

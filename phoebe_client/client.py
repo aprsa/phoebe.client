@@ -19,56 +19,78 @@ class PhoebeClient:
         self.phoebe = PhoebeAPI(host=host, port=port)
 
         if auto_session:
-            self.create_session()
+            self.start_session()
 
-    def authenticate(self, credentials: dict[str, str]) -> 'PhoebeClient':
-        """Authenticate UI user via injected provider."""
-        if not self.auth_provider:
-            raise AuthenticationError("No authentication provider configured")
-        self.jwt_token = self.auth_provider.authenticate(credentials)
-        # Forward JWT to APIs for identification/auditing on requests
-        self.sessions.set_jwt_token(self.jwt_token)
-        self.phoebe.set_jwt_token(self.jwt_token)
-        return self
-
-    def create_session(self) -> dict[str, Any]:
-        response = self.sessions.start_session()
-        self.phoebe.set_client_id(response.get('client_id'))
+    def start_session(self, metadata: dict[str, Any] | None = None) -> dict[str, Any]:
+        response = self.sessions.start_session(metadata=metadata)
+        self.phoebe.set_session_id(response.get('session_id'))
         return response
 
-    def close_session(self):
-        if self.phoebe.client_id:
-            self.sessions.end_session(self.phoebe.client_id)
-            self.phoebe.set_client_id(None)
+    def set_session_id(self, session_id: str):
+        self.phoebe.set_session_id(session_id)
 
-    def get_parameter(self, twig: str) -> dict[str, Any]:
+    def close_session(self):
+        if self.phoebe.session_id:
+            self.sessions.end_session(self.phoebe.session_id)
+            self.phoebe.set_session_id(None)
+
+    def get_sessions(self) -> dict[str, Any]:
+        return self.sessions.get_sessions()
+
+    def attach_parameters(self, parameters: list[dict[str, Any]]) -> dict[str, Any]:
+        response = self.phoebe.execute(
+            command='attach_parameters',
+            args={'parameters': parameters}
+        )
+        return response
+
+    def get_parameter(self, qualifier: str, **kwargs) -> dict[str, Any]:
         return self.phoebe.execute(
             command='get_parameter',
+            args={'qualifier': qualifier, **kwargs}
+        )
+
+    def is_parameter_constrained(self, uniqueid: str) -> dict[str, Any]:
+        response = self.phoebe.execute(
+            command='is_parameter_constrained',
+            args={'uniqueid': uniqueid}
+        )
+        return response
+
+    def update_uniqueid(self, twig: str) -> dict[str, Any]:
+        return self.phoebe.execute(
+            command='update_uniqueid',
             args={'twig': twig}
         )
 
-    def get_value(self, twig: str | None = None, uniqueid: str | None = None) -> Any:
+    def get_value(self, uniqueid: str) -> Any:
         return self.phoebe.execute(
             command='get_value',
-            args={'twig': twig, 'uniqueid': uniqueid}
+            args={'uniqueid': uniqueid}
         )
 
-    def set_value(self, twig: str | None = None, uniqueid: str | None = None, value=None) -> dict[str, Any]:
+    def set_value(self, uniqueid: str, value) -> dict[str, Any]:
         return self.phoebe.execute(
             command='set_value',
-            args={'twig': twig, 'uniqueid': uniqueid, 'value': value}
+            args={'uniqueid': uniqueid, 'value': value}
         )
 
-    def add_dataset(self, kind: str | None = None, **kwargs) -> dict[str, Any]:
+    def add_dataset(self, **kwargs) -> dict[str, Any]:
         return self.phoebe.execute(
             command='add_dataset',
-            args={'kind': kind, **kwargs}
+            args=kwargs
         )
 
     def remove_dataset(self, dataset: str) -> dict[str, Any]:
         return self.phoebe.execute(
             command='remove_dataset',
             args={'dataset': dataset}
+        )
+
+    def get_datasets(self) -> dict[str, Any]:
+        return self.phoebe.execute(
+            command='get_datasets',
+            args={}
         )
 
     def run_compute(self, **kwargs) -> dict[str, Any]:
@@ -81,6 +103,12 @@ class PhoebeClient:
         return self.phoebe.execute(
             command='run_solver',
             args=kwargs
+        )
+
+    def get_bundle(self) -> dict[str, Any]:
+        return self.phoebe.execute(
+            command='get_bundle',
+            args={}
         )
 
     def load_bundle(self, bundle: str) -> dict[str, Any]:
@@ -96,8 +124,8 @@ class PhoebeClient:
         )
 
     def __enter__(self):
-        if not self.phoebe.client_id:
-            self.create_session()
+        if not self.phoebe.session_id:
+            self.start_session()
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
