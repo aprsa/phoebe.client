@@ -88,7 +88,7 @@ class SessionAPI(BaseAPI):
         return self._request(
             'POST',
             '/dash/start-session',
-            json={'metadata': metadata}
+            json=metadata
         )
 
     def end_session(self, session_id: str) -> dict[str, Any]:
